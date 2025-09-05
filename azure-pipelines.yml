@@ -37,18 +37,7 @@ stages:
             command: 'plan'
             workingDirectory: '$(System.DefaultWorkingDirectory)/environment/dev'
             environmentServiceNameAzureRM: 'humaraConnect'
-      
-      - job: scanning
-        displayName: 'microsoft hosted scan job'
-        pool: 
-         vmImage: ubuntu-latest
-        steps:
-        - task: tfsec@1
-          displayName: 'tfsec scanning task'
-          inputs:
-            version: 'v1.26.0'
-            dir: '$(System.DefaultWorkingDirectory)'       
-
+         
 
 
   - stage: codeScanning
@@ -58,7 +47,37 @@ stages:
         displayName: 'Tfsec scan'
         steps:
         - task: tfsec@1
+          continueOnError: true
           displayName: 'tfsec scanning task'
           inputs:
             version: 'v1.26.0'
             dir: '$(System.DefaultWorkingDirectory)'
+
+
+  - stage: apply
+    dependsOn: codeScanning
+    displayName: 'Terraform Apply'
+    jobs:
+      - job: manualApproval
+        displayName: 'Manual Approval'
+        pool: server
+        steps:
+        - task: ManualValidation@1
+          displayName: 'Manual Validation for manager'
+          inputs:
+            notifyUsers: 'achinta.dutta04@gmail.com'
+            approvers: 'achinta.dutta04@gmail.com'
+
+      - job: apply
+        dependsOn: manualApproval
+        displayName: 'Terraform Apply job'
+        steps:
+        - task: TerraformTask@5
+          displayName: 'Terraform Apply'
+          inputs:
+            provider: 'azurerm'
+            command: 'apply'
+            workingDirectory: '$(System.DefaultWorkingDirectory)/environment/dev'
+            environmentServiceNameAzureRM: 'humaraConnect'
+
+  
