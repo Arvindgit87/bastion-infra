@@ -1,4 +1,4 @@
-![Quickstart: Use Terraform to deploy Azure Bastion | Microsoft Learn](https://github.com/Achinta1997/bastion-infra/blob/main/HLD_infra.jpg)
+![Quickstart: Use Terraform to deploy Azure Bastion | Microsoft Learn](https://github.com/Achinta1997/bastion-infra/blob/main/HLD.png)
 
 Here’s a relevant architectural diagram illustrating an Azure Bastion deployment setup using Terraform—ideal for your README visualization.
 
