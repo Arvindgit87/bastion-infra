@@ -5,6 +5,9 @@ trigger: none
 pool: 
   name: humaraPool
 
+variables:
+  WORK_DIR: '$(System.DefaultWorkingDirectory)/environment/dev'
+
 stages:
   - stage: initValidatePlan
     displayName: 'Terraform init/validate/plan'
@@ -17,7 +20,7 @@ stages:
           inputs:
             provider: 'azurerm'
             command: 'init'
-            workingDirectory: '$(System.DefaultWorkingDirectory)/environment/dev'
+            workingDirectory: '$(WORK_DIR)'
             backendServiceArm: 'humaraConnect'
             backendAzureRmStorageAccountName: 'terrastorage1'
             backendAzureRmContainerName: 'terra-remote'
@@ -28,14 +31,14 @@ stages:
           inputs:
             provider: 'azurerm'
             command: 'validate'
-            workingDirectory: '$(System.DefaultWorkingDirectory)/environment/dev'
+            workingDirectory: '$(WORK_DIR)'
 
         - task: TerraformTask@5
           displayName: 'Terraform Plan'
           inputs:
             provider: 'azurerm'
             command: 'plan'
-            workingDirectory: '$(System.DefaultWorkingDirectory)/environment/dev'
+            workingDirectory: '$(WORK_DIR)'
             environmentServiceNameAzureRM: 'humaraConnect'
          
 
@@ -78,7 +81,7 @@ stages:
           inputs:
             provider: 'azurerm'
             command: 'init'
-            workingDirectory: '$(System.DefaultWorkingDirectory)/environment/dev'
+            workingDirectory: '$(WORK_DIR)'
             backendServiceArm: 'humaraConnect'
             backendAzureRmStorageAccountName: 'terrastorage1'
             backendAzureRmContainerName: 'terra-remote'
@@ -89,7 +92,7 @@ stages:
           inputs:
             provider: 'azurerm'
             command: 'apply'
-            workingDirectory: '$(System.DefaultWorkingDirectory)/environment/dev'
+            workingDirectory: '$(WORK_DIR)'
             environmentServiceNameAzureRM: 'humaraConnect'
 
   
