@@ -1,0 +1,41 @@
+name: 'bastion wali pipeline'
+
+trigger: none
+
+pool: 
+  name: humaraPool
+
+stages:
+  - stage: initValidatePlan
+    displayName: 'Terraform init/validate/plan'
+    jobs:
+      - job: jobInitValidatePlan
+        displayName: 'Init/validate/plan job'
+        steps:
+        - task: TerraformTask@5
+          displayName: 'Terraform Init'
+          inputs:
+            provider: 'azurerm'
+            command: 'init'
+            workingDirectory: '$(System.DefaultWorkingDirectory)/environment/dev'
+            backendServiceArm: 'humaraConnect'
+            backendAzureRmStorageAccountName: 'terrastorage1'
+            backendAzureRmContainerName: 'terra-remote'
+            backendAzureRmKey: 'dev.tfstate'
+
+        - task: TerraformTask@5
+          displayName: 'Terraform Validate'
+          inputs:
+            provider: 'azurerm'
+            command: 'validate'
+            workingDirectory: '$(System.DefaultWorkingDirectory)/environment/dev'
+
+        - task: TerraformTask@5
+          displayName: 'Terraform Plan'
+          inputs:
+            provider: 'azurerm'
+            command: 'plan'
+            workingDirectory: '$(System.DefaultWorkingDirectory)/environment/dev'
+            environmentServiceNameAzureRM: 'humaraConnect'
+
+
