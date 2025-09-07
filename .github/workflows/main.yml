@@ -1,0 +1,104 @@
+name: bastion wali pipeline
+
+on:
+  workflow_dispatch:  # manual trigger
+  # push:
+  #   branches:
+  #     - main
+
+env:
+  WORK_DIR: ./environment/dev
+
+jobs:
+
+  terraform-init-validate-plan:
+    name: Terraform Init/Validate/Plan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: latest
+
+      - name: Terraform Init
+        run: |
+          terraform init \
+            -backend-config="storage_account_name=terrastorage1" \
+            -backend-config="container_name=terra-remote" \
+            -backend-config="key=dev.tfstate" \
+            -backend-config="access_key=${{ secrets.AZURE_STORAGE_ACCESS_KEY }}"
+        working-directory: ${{ env.WORK_DIR }}
+
+      - name: Terraform Validate
+        run: terraform validate
+        working-directory: ${{ env.WORK_DIR }}
+
+      - name: Terraform Plan
+        run: terraform plan
+        working-directory: ${{ env.WORK_DIR }}
+        env:
+          ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+          ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+
+  static-code-scan:
+    name: tfsec Static Code Scan
+    runs-on: ubuntu-latest
+    needs: terraform-init-validate-plan
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Run tfsec
+        uses: aquasecurity/tfsec-action@v1.0.0
+        with:
+          version: v1.26.0
+        continue-on-error: true
+
+  terraform-apply:
+    name: Terraform Apply (manual approval)
+    runs-on: ubuntu-latest
+    needs: static-code-scan
+    if: ${{ success() }}
+
+    steps:
+      - name: Wait for manual approval
+        uses: trstringer/manual-approval@v1
+        with:
+          secret: ${{ secrets.GITHUB_TOKEN }}
+          approvers: achinta.dutta04@gmail.com
+          minimum-approvals: 1
+          issue-title: "Approve Terraform Apply"
+          issue-body: "Please review and approve to apply the Terraform changes."
+
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: latest
+
+      - name: Terraform Init
+        run: |
+          terraform init \
+            -backend-config="storage_account_name=terrastorage1" \
+            -backend-config="container_name=terra-remote" \
+            -backend-config="key=dev.tfstate" \
+            -backend-config="access_key=${{ secrets.AZURE_STORAGE_ACCESS_KEY }}"
+        working-directory: ${{ env.WORK_DIR }}
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
+        working-directory: ${{ env.WORK_DIR }}
+        env:
+          ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+          ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
